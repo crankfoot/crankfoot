@@ -24,8 +24,23 @@ import random
 #Global variables
 ALLWORDS = ""
 RELWORDS = ""
+KEYWORDS = ""
 X = 10
-Q = 20
+Q = 0
+vowels = ["a","e","i","o","u"]
+cons = ["b","c","d","f","g","h","j","k","l","m","n","p","q","r","s","t","v","w","x","z"]
+prondict = {"a": ["y","e|c|"]+cons, "a|c|":cons, "b":["b|v|","l|v|","r|v|", "s|v|", "w|v|"]+vowels, "b|v|":vowels, "c": ["h|v|","k","t|v|"]+vowels,
+ "c|v|":vowels, "d":["d|v|","l|v|", "r|v|", "w|v|"]+vowels, "d|v|": vowels, "e": ["e|c|", "a|c|", "i|c|", "o|c|", "y"]+cons, "e|c|":cons,
+    "f":["f|v|","l|v|","r|v|","w|v|"]+vowels, "f|v|":vowels, "g":["g|v|","h|v|","l|v|","r|v|","w|v|"]+vowels, "g|v|": vowels, "h":vowels, "h|v|": vowels,
+        "i":["a|c|","e|c|","o|c|","u|c|"]+cons, "i|c|": cons, "j": vowels, "j|v|": vowels, "k":["l|v|","n|v|","r|v|","t|v|","w|v|"]+vowels, "k|v|": vowels,
+            "l":["d|v|","f|v|","g|v|","k|v|","l|v|","m|v|","n|v|","p|v|","s|v|","t|v|","z|v|"]+vowels, "l|v|":vowels, "m":["n|v|","s|v|"]+vowels,
+                "m|v|":vowels, "n":["g|v|", "k|v|", "s|v|", "t|v|", "x|v|"]+vowels, "n|v|":vowels, "o":["a|c|", "e|c|", "o|c|", "u|c|", "y"]+cons,
+                    "o|c|":cons, "p":["f|v|", "h|v|", "l|v|", "p|v|", "r|v|", "s|v|", "t|v|", "w|v|"]+vowels, "p|v|":cons, "q":["u"],
+                        "r":["b|v|","c|v|","d|v|","f|v|","g|v|","k|v|","l|v|","m|v|","n","p|v|","q","r|v|","s|v|", "t|v|", "x|v|", "z|v|"]+vowels,
+                            "r|v|":vowels,"s":["c|v|","h|v|","k|v|","l|v|","m|v|","n|v|","p|v|", "q", "s|v|", "t|v|", "w|v|"]+vowels, "s|v|":vowels,
+                                "t":["h|v|","r|v|","t|v|","w|v|","z|v|"]+vowels, "t|v|":vowels, "u":["a|c|","e|c|","i|c|","o|c|","y"]+cons, "u|c|":cons,
+                                    "v":["r|v|"]+vowels, "v|v|":vowels, "w":["h|v|", "r|v|","s|v|","t|v|","z|v|"]+vowels, "w|v|":vowels, "x":["x|v|"]+vowels,
+                                        "x|v|":vowels, "y":["a", "e", "i", "o", "u"], "z":["h|v|","l|v|","w|v|","z|v|"]+vowels, "z|v|":vowels}
 
 def random_event(anti = 0):
     if random.randrange(100) <= (X+anti):
@@ -34,15 +49,31 @@ def random_event(anti = 0):
 
 def quirky_prefix(word):
     '''Returns a quirky (pronouncable) prefix to preceed a word.'''
-
-    return prefixed
+    
+    return word
 
 def quirky_suffix(word):
     '''Returns a quirky (pronouncable) suffix to append to a word.'''
 
-    suffix = ""
+    suffixed = ""
+    suffix =[]
+    c = 0
 
-    return suffixed
+    if word[-1] in cons:
+        suffix.append(random.choice(vowels))
+    elif word[-1] in vowels:
+        suffix.append(random.choice(cons))
+    else:
+        suffix.append(random.choice(prondict["y"]))
+        
+    while random.randrange(100) <= Q:
+        suffix.append(random.choice(prondict[suffix[c]]))
+        c += 1
+
+    for l in suffix:
+        suffixed += l[0]
+
+    return mash_left(word, suffixed)
 
 def mashable(word1, word2):
     '''Returns true if the two words can be audibly combined.'''
@@ -70,7 +101,7 @@ def mash_left(word1, word2):
             firstchars = word2[:i+1]
             if lastchars == firstchars:
                 return word1 + word2[len(lastchars):]
-    return ""
+    return word1+word2
 
 def mash_left_count(word1, word2):
     '''Returns number of characters that would overlap by calling mash_left(word1, word2).'''
@@ -117,10 +148,10 @@ def mash(word1, word2):
         word1left = word1[:i+1]
         word1right = word1[i+1:]
         leftpush = mash_left(word1left, word2)
-        if leftpush:
+        if (leftpush!=word1left+word2):
             delta = len(word1left) + len(word2) - len(leftpush)
             leftpush2 = mash_left(word2[delta:], word1right)
-            if leftpush2:
+            if (leftpush2!=word2[delta:]+word1right):
                 newwords.append(word1left+leftpush2)
     return newwords
     
@@ -133,24 +164,22 @@ def genpuns(word):
         
         workingset = []
         
-        if mashable(word, term):
-            mashed = mash(word, term)
-            for amash in mashed:
+        mashed = mash(word, term)
+        for amash in mashed:
+            if random_event():
+                amash = quirky_suffix(amash)
                 if random_event():
-                    amash = quirky_suffix(amash)
-                    if random_event():
-                        amash = quirky_prefix(word)
-                    puns.append(amash)
-            puns += mashed
+                    amash = quirky_prefix(word)
+                puns.append(amash)
+        puns += mashed
 
-        if mashable(term, word):
-            mashed = mash(term, word)
-            for amash in mashed:
+        mashed = mash(term, word)
+        for amash in mashed:
+            if random_event():
+                amash = quirky_suffix(amash)
                 if random_event():
-                    amash = quirky_suffix(amash)
-                    if random_event():
-                        amash = quirky_prefix(word)
-                    puns.append(amash)
+                    amash = quirky_prefix(word)
+                puns.append(amash)
             puns += mashed
 
     for a in range(X):
@@ -162,12 +191,41 @@ def genpuns(word):
     
     return puns
 
-def punnify(keywords):
+def load_words(kwdfilename, rwdfilename):
+    '''Loads the keywords from the file "kwdfilename" and relevant words from "rwdfilename"'''
+
+    global KEYWORDS
+    global RELWORDS
+
+    with open(kwdfilename, "r") as myfile:
+        KEYWORDS=myfile.read()
+        KEYWORDS = KEYWORDS.replace(' ', '').lower().split("\n")
+    with open(rwdfilename, "r") as myfile:
+        RELWORDS=myfile.read()
+        RELWORDS = RELWORDS.replace(' ', '').lower().split("\n")
+
+def punnify():
     '''Creates and returns a set of funny pun words from the two input word sets.'''
 
     puns = []
 
-    for word in keywords:
-        puns += genpuns(word)
+    for word in KEYWORDS:
+        if word:
+            puns += genpuns(word)
 
     return puns
+
+def main():
+    
+    load_words("list_words","list_words")
+    #print("KWD: "+str(KEYWORDS)+" RWD: "+str(RELWORDS))
+    puns = punnify()
+    unique_puns = set()
+    for p in puns:
+        unique_puns.add(p)
+    for p in unique_puns:
+        print(p)
+        input()
+
+if __name__ == '__main__':
+    main()
